@@ -45,23 +45,35 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-
+    // 바깥쪽 Scaffold: 웹 환경에서 보이는 회색/검정색 여백
     return Scaffold(
-      body: selectedScene[selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: selectedIndex,
-        onTap: (index) {
-          setState(() {
-            selectedIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
-          BottomNavigationBarItem(icon: Icon(Icons.search),label: '탐색'),
-          BottomNavigationBarItem(icon: Icon(Icons.timer), label: '타이머'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: '마이')
-        ],
+      backgroundColor: Colors.grey[900], 
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 450), // 모바일 가로 사이즈 제한
+          // 안쪽 Scaffold: 실제 모바일 앱 화면
+          child: Scaffold(
+            body: selectedScene[selectedIndex],
+            bottomNavigationBar: BottomNavigationBar(
+              currentIndex: selectedIndex,
+              onTap: (index) {
+                setState(() {
+                  selectedIndex = index;
+                });
+              },
+              backgroundColor: Colors.black,
+              selectedItemColor: Colors.white,
+              unselectedItemColor: Colors.white54,
+              type: BottomNavigationBarType.fixed,
+              items: const [
+                BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
+                BottomNavigationBarItem(icon: Icon(Icons.search),label: '탐색'),
+                BottomNavigationBarItem(icon: Icon(Icons.timer), label: '타이머'),
+                BottomNavigationBarItem(icon: Icon(Icons.person), label: '마이')
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
