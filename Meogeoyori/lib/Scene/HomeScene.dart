@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import 'package:meogeoyori/Model/ShortsModel.dart';
 
 class HomeScene extends StatefulWidget {
@@ -30,37 +31,19 @@ class _HomeSceneState extends State<HomeScene> {
         itemCount: _shortsList.length,
         itemBuilder: (context, index) {
           final data = _shortsList[index];
-          return _buildShortsItem(data);
+          return _buildShortsItem(data, index);
         },
       ),
     );
   }
 
-  Widget _buildShortsItem(ShortsModel data) {
+  Widget _buildShortsItem(ShortsModel data, int index) {
     return Stack(
       children: [
-        Container(
+        SizedBox(
           width: double.infinity,
           height: double.infinity,
-          decoration: BoxDecoration(
-            color: data.backgroundColor,
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                data.backgroundColor.withOpacity(0.6),
-                data.backgroundColor,
-                data.backgroundColor.withOpacity(0.9),
-              ],
-            ),
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.play_arrow_rounded,
-              size: 80,
-              color: Colors.white38,
-            ),
-          ),
+          child: _VideoPlayerWidget(url: data.videoUrl),
         ),
         
         Positioned(
@@ -153,8 +136,8 @@ class _HomeSceneState extends State<HomeScene> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.white.withOpacity(0.3),
-                    Colors.white.withOpacity(0.05),
+                    Colors.white.withOpacity(0.3), 
+                    Colors.white.withOpacity(0.05), 
                   ],
                 ),
               ),
@@ -182,5 +165,53 @@ class _HomeSceneState extends State<HomeScene> {
         ]
       ],
     );
+  }
+}
+
+class _VideoPlayerWidget extends StatefulWidget {
+  final String url;
+  const _VideoPlayerWidget({required this.url});
+
+  @override
+  State<_VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
+}
+
+class _VideoPlayerWidgetState extends State<_VideoPlayerWidget> {
+  late VideoPlayerController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.asset(widget.url)
+      ..initialize().then((_) {
+        setState(() {});
+        _controller.setVolume(0.0);
+        _controller.setLooping(true);
+        _controller.play();
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_controller.value.isInitialized) {
+      return SizedBox.expand(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: _controller.value.size.width,
+            height: _controller.value.size.height,
+            child: VideoPlayer(_controller),
+          ),
+        ),
+      );
+    } else {
+      return const Center(child: CircularProgressIndicator(color: Colors.white));
+    }
   }
 }
