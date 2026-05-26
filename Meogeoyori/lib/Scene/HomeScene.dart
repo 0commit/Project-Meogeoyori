@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:meogeoyori/Model/ShortsModel.dart';
+import 'package:meogeoyori/Scene/CreatorProfileScene.dart';
+import 'package:meogeoyori/Scene/HashtagResultScene.dart';
 
 class HomeScene extends StatefulWidget {
   const HomeScene({super.key});
@@ -86,6 +88,17 @@ class _ShortsItemWidgetState extends State<_ShortsItemWidget> {
     );
   }
 
+  void _showRecipeDetailBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return _buildRecipeDetailSheet();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -137,25 +150,57 @@ class _ShortsItemWidgetState extends State<_ShortsItemWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                widget.data.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  height: 1.3,
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _showRecipeDetailBottomSheet,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0, right: 20.0),
+                  child: Text(
+                    widget.data.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      height: 1.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 6),
 
-              Text(
-                "@${widget.data.creatorName}",
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => CreatorProfileScene(creatorName: widget.data.creatorName),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(1.0, 0.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeOutQuart;
+                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        return SlideTransition(
+                          position: animation.drive(tween),
+                          child: child,
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 300),
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Text(
+                    "@${widget.data.creatorName}",
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -164,17 +209,38 @@ class _ShortsItemWidgetState extends State<_ShortsItemWidget> {
                 spacing: 8,
                 runSpacing: 8,
                 children: widget.data.hashtags.map((tag) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      "#$tag",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation, secondaryAnimation) => HashtagResultScene(hashtag: tag),
+                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                            const begin = Offset(1.0, 0.0);
+                            const end = Offset.zero;
+                            const curve = Curves.easeOutQuart;
+                            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                            return SlideTransition(
+                              position: animation.drive(tween),
+                              child: child,
+                            );
+                          },
+                          transitionDuration: const Duration(milliseconds: 300),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        "#$tag",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   );
@@ -403,6 +469,98 @@ class _ShortsItemWidgetState extends State<_ShortsItemWidget> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$label 처리되었습니다."), duration: const Duration(seconds: 1)));
       },
+    );
+  }
+
+  Widget _buildRecipeDetailSheet() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1C1E),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text("레시피 상세", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+            const Divider(color: Colors.white10, height: 1),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  Text(
+                    widget.data.title,
+                    style: const TextStyle(color: Colors.orangeAccent, fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text("🛒 준비 재료", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  _buildIngredientRow("계란", "2개"),
+                  _buildIngredientRow("대파", "1/2대"),
+                  _buildIngredientRow("간장", "1 큰술"),
+                  _buildIngredientRow("참기름", "1 큰술"),
+                  _buildIngredientRow("통깨", "약간"),
+                  
+                  const SizedBox(height: 32),
+                  const Text("🍳 조리 순서", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  _buildStepRow("1", "대파를 송송 썰어 준비합니다. 너무 두껍지 않게 써는 것이 포인트입니다."),
+                  _buildStepRow("2", "기름을 두른 팬에 대파를 넣고 약불에서 파기름을 냅니다."),
+                  _buildStepRow("3", "파 향이 올라오면 계란을 넣고 빠르게 스크램블 해줍니다."),
+                  _buildStepRow("4", "밥을 넣고 간장, 참기름으로 간을 한 뒤 통깨를 뿌려 마무리합니다."),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIngredientRow(String name, String amount) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(name, style: const TextStyle(color: Colors.white70, fontSize: 15)),
+          Text(amount, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepRow(String step, String description) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: const BoxDecoration(
+              color: Colors.orangeAccent,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(step, style: const TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              description,
+              style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.4),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
