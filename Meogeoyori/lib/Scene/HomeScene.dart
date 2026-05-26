@@ -12,7 +12,6 @@ class HomeScene extends StatefulWidget {
 
 class _HomeSceneState extends State<HomeScene> {
   final PageController _pageController = PageController();
-
   final List<ShortsModel> _shortsList = ShortsDummyData.shortsList;
 
   @override
@@ -31,19 +30,70 @@ class _HomeSceneState extends State<HomeScene> {
         itemCount: _shortsList.length,
         itemBuilder: (context, index) {
           final data = _shortsList[index];
-          return _buildShortsItem(data, index);
+          return _ShortsItemWidget(data: data);
         },
       ),
     );
   }
+}
 
-  Widget _buildShortsItem(ShortsModel data, int index) {
+class _ShortsItemWidget extends StatefulWidget {
+  final ShortsModel data;
+
+  const _ShortsItemWidget({required this.data});
+
+  @override
+  State<_ShortsItemWidget> createState() => _ShortsItemWidgetState();
+}
+
+class _ShortsItemWidgetState extends State<_ShortsItemWidget> {
+  bool _isLiked = false;
+
+  void _toggleLike() {
+    setState(() {
+      _isLiked = !_isLiked;
+    });
+  }
+
+  void _showCommentBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return _buildCommentSheet();
+      },
+    );
+  }
+
+  void _showShareBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return _buildShareSheet();
+      },
+    );
+  }
+
+  void _showMoreBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return _buildMoreSheet();
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Stack(
       children: [
         SizedBox(
           width: double.infinity,
           height: double.infinity,
-          child: _VideoPlayerWidget(url: data.videoUrl),
+          child: _VideoPlayerWidget(url: widget.data.videoUrl),
         ),
         
         Positioned(
@@ -52,13 +102,29 @@ class _HomeSceneState extends State<HomeScene> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildActionButton(Icons.favorite, data.likeCount),
+              GestureDetector(
+                onTap: _toggleLike,
+                child: _buildActionButton(
+                  _isLiked ? Icons.favorite : Icons.favorite_border,
+                  widget.data.likeCount,
+                  iconColor: _isLiked ? Colors.redAccent : Colors.white,
+                ),
+              ),
               const SizedBox(height: 24),
-              _buildActionButton(Icons.comment, data.commentCount),
+              GestureDetector(
+                onTap: _showCommentBottomSheet,
+                child: _buildActionButton(Icons.comment, widget.data.commentCount),
+              ),
               const SizedBox(height: 24),
-              _buildActionButton(Icons.share, "공유"),
+              GestureDetector(
+                onTap: _showShareBottomSheet,
+                child: _buildActionButton(Icons.share, "공유"),
+              ),
               const SizedBox(height: 24),
-              _buildActionButton(Icons.more_horiz, ""),
+              GestureDetector(
+                onTap: _showMoreBottomSheet,
+                child: _buildActionButton(Icons.more_horiz, ""),
+              ),
             ],
           ),
         ),
@@ -72,7 +138,7 @@ class _HomeSceneState extends State<HomeScene> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                data.title,
+                widget.data.title,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -85,7 +151,7 @@ class _HomeSceneState extends State<HomeScene> {
               const SizedBox(height: 6),
 
               Text(
-                "@${data.creatorName}",
+                "@${widget.data.creatorName}",
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
@@ -97,7 +163,7 @@ class _HomeSceneState extends State<HomeScene> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: data.hashtags.map((tag) {
+                children: widget.data.hashtags.map((tag) {
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
@@ -121,7 +187,7 @@ class _HomeSceneState extends State<HomeScene> {
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label) {
+  Widget _buildActionButton(IconData icon, String label, {Color iconColor = Colors.white}) {
     return Column(
       children: [
         ClipOval(
@@ -141,7 +207,7 @@ class _HomeSceneState extends State<HomeScene> {
                   ],
                 ),
               ),
-              child: Icon(icon, color: Colors.white, size: 26),
+              child: Icon(icon, color: iconColor, size: 26),
             ),
           ),
         ),
@@ -164,6 +230,179 @@ class _HomeSceneState extends State<HomeScene> {
           ),
         ]
       ],
+    );
+  }
+
+  // --- Bottom Sheets UI ---
+
+  Widget _buildCommentSheet() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.6,
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1C1E),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+          const SizedBox(height: 12),
+          Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text("댓글", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+          const Divider(color: Colors.white10, height: 1),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _buildDummyComment("요리초보", "진짜 5분만에 완성되나요? 퇴근하고 해봐야겠어요!"),
+                _buildDummyComment("자취마스터", "계란 대신 두부 넣어도 맛있습니다 강추👍"),
+                _buildDummyComment("다이어터", "소스 비율 조금 줄이면 다이어트 식단으로도 좋겠네요."),
+              ],
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 16, left: 16, right: 16, top: 16),
+            decoration: const BoxDecoration(
+              color: Color(0xFF2C2C2E),
+              border: Border(top: BorderSide(color: Colors.white10)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: "따뜻한 댓글을 남겨주세요...",
+                      hintStyle: const TextStyle(color: Colors.white54, fontSize: 14),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFF1C1C1E),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Icon(Icons.send, color: Colors.orangeAccent),
+              ],
+            ),
+          ),
+        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDummyComment(String name, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(backgroundColor: Colors.white24, radius: 18, child: const Icon(Icons.person, color: Colors.white, size: 20)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: const TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(text, style: const TextStyle(color: Colors.white, fontSize: 14)),
+              ],
+            ),
+          ),
+          const Icon(Icons.favorite_border, color: Colors.white54, size: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShareSheet() {
+    return Container(
+      padding: const EdgeInsets.only(top: 12, bottom: 24),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1C1E),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+          Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text("공유하기", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildShareOption(Icons.link, "링크 복사", Colors.blue),
+              _buildShareOption(Icons.chat_bubble, "카카오톡", Colors.yellow.shade700),
+              _buildShareOption(Icons.camera_alt, "인스타그램", Colors.pinkAccent),
+              _buildShareOption(Icons.more_horiz, "더보기", Colors.white54),
+            ],
+          ),
+        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShareOption(IconData icon, String label, Color color) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$label 선택됨"), duration: const Duration(seconds: 1)));
+      },
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color.withOpacity(0.2)),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMoreSheet() {
+    return Container(
+      padding: const EdgeInsets.only(top: 12, bottom: 24),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1C1E),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+          Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 24),
+          _buildMoreOption(Icons.bookmark_border, "영상 저장"),
+          _buildMoreOption(Icons.visibility_off_outlined, "관심 없음"),
+          _buildMoreOption(Icons.report_outlined, "신고하기", color: Colors.redAccent),
+        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoreOption(IconData icon, String label, {Color color = Colors.white}) {
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(label, style: TextStyle(color: color, fontSize: 15)),
+      onTap: () {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$label 처리되었습니다."), duration: const Duration(seconds: 1)));
+      },
     );
   }
 }
