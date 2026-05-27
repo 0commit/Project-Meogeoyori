@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:meogeoyori/Model/ShortsModel.dart';
 import 'package:meogeoyori/Scene/CreatorProfileScene.dart';
 import 'package:meogeoyori/Scene/HashtagResultScene.dart';
@@ -14,7 +15,43 @@ class HomeScene extends StatefulWidget {
 
 class _HomeSceneState extends State<HomeScene> {
   final PageController _pageController = PageController();
-  final List<ShortsModel> _shortsList = ShortsDummyData.shortsList;
+  List<ShortsModel> _shortsList = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchVideos();
+  }
+
+  Future<void> _fetchVideos() async {
+    try {
+      final data = await Supabase.instance.client
+          .from('shorts')
+          .select()
+          .order('created_at', ascending: true);
+          
+      final List<ShortsModel> fetchedList = (data as List)
+          .map<ShortsModel>((e) => ShortsModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+          
+      if (mounted) {
+        setState(() {
+          _shortsList = fetchedList;
+          _isLoading = false;
+        });
+      }
+    } catch (e, stack) {
+      print("Supabase Fetch Error: $e\n$stack");
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -26,15 +63,24 @@ class _HomeSceneState extends State<HomeScene> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: PageView.builder(
-        controller: _pageController,
-        scrollDirection: Axis.vertical,
-        itemCount: _shortsList.length,
-        itemBuilder: (context, index) {
-          final data = _shortsList[index];
-          return _ShortsItemWidget(data: data);
-        },
-      ),
+      body: _isLoading 
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          : _errorMessage != null
+              ? Center(child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text("서버 에러:\n$_errorMessage", style: const TextStyle(color: Colors.redAccent)),
+                ))
+              : _shortsList.isEmpty 
+                  ? const Center(child: Text("등록된 영상이 없습니다.", style: TextStyle(color: Colors.white)))
+                  : PageView.builder(
+                  controller: _pageController,
+                  scrollDirection: Axis.vertical,
+                  itemCount: _shortsList.length,
+                  itemBuilder: (context, index) {
+                    final data = _shortsList[index];
+                    return _ShortsItemWidget(data: data);
+                  },
+                ),
     );
   }
 }
