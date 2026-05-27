@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:meogeoyori/Scene/HomeScene.dart';
 import 'package:meogeoyori/Scene/ProfileScene.dart';
 import 'package:meogeoyori/Scene/SearchScene.dart';
 import 'package:meogeoyori/Scene/TimerScene.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://prnlzgxgbmlfhvykuffp.supabase.co',
+    anonKey: 'sb_publishable_iMr5I2zfKkGyhY4i5qS0EA_u581ejig',
+  );
+
   runApp(const MyApp());
 }
 

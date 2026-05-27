@@ -574,36 +574,45 @@ class _VideoPlayerWidget extends StatefulWidget {
 }
 
 class _VideoPlayerWidgetState extends State<_VideoPlayerWidget> {
-  late VideoPlayerController _controller;
+  VideoPlayerController? _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.asset(widget.url)
-      ..initialize().then((_) {
-        setState(() {});
-        _controller.setVolume(0.0);
-        _controller.setLooping(true);
-        _controller.play();
-      });
+    if (widget.url.isEmpty) return;
+
+    _controller = widget.url.startsWith('http')
+        ? VideoPlayerController.networkUrl(Uri.parse(widget.url))
+        : VideoPlayerController.asset(widget.url);
+        
+    _controller?.initialize().then((_) {
+      if (mounted) setState(() {});
+      _controller?.setVolume(0.0);
+      _controller?.setLooping(true);
+      _controller?.play();
+    });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_controller.value.isInitialized) {
+    if (widget.url.isEmpty) {
+      return const Center(child: Text("영상을 등록해주세요", style: TextStyle(color: Colors.white54, fontSize: 16)));
+    }
+
+    if (_controller != null && _controller!.value.isInitialized) {
       return SizedBox.expand(
         child: FittedBox(
           fit: BoxFit.cover,
           child: SizedBox(
-            width: _controller.value.size.width,
-            height: _controller.value.size.height,
-            child: VideoPlayer(_controller),
+            width: _controller!.value.size.width,
+            height: _controller!.value.size.height,
+            child: VideoPlayer(_controller!),
           ),
         ),
       );
