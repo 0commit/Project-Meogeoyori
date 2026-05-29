@@ -6,6 +6,8 @@ import 'package:meogeoyori/Scene/SearchScene.dart';
 import 'package:meogeoyori/Scene/TimerScene.dart';
 import 'package:meogeoyori/Scene/ProfileSettingsScene.dart';
 import 'package:meogeoyori/Scene/SignUpProfileScene.dart';
+import 'package:meogeoyori/Scene/EmailLoginScene.dart';
+import 'package:meogeoyori/Scene/ResetPasswordScene.dart';
 
 class ProfileScene extends StatefulWidget {
   const ProfileScene({super.key});
@@ -31,6 +33,13 @@ class _ProfileSceneState extends State<ProfileScene> {
     }
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       if (mounted) {
+        if (data.event == AuthChangeEvent.passwordRecovery) {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const ResetPasswordScene()),
+          );
+          return;
+        }
+
         if (data.session != null) {
           _checkProfile();
         } else {
@@ -264,14 +273,26 @@ class _ProfileSceneState extends State<ProfileScene> {
                   onTap: _signInWithGoogle,
                 ),
               const SizedBox(height: 16),
-              _buildLoginButton(
-                title: "카카오로 계속하기",
-                color: const Color(0xFFFEE500),
-                textColor: Colors.black87,
-                iconWidget: const Icon(Icons.chat_bubble, color: Colors.black87, size: 20),
-                onTap: _signInWithKakao,
-              ),
-              // 다른 소셜 로그인 버튼들은 숨김 처리 (기존에 주석 처리됨)
+                _buildLoginButton(
+                  title: "카카오로 계속하기",
+                  color: const Color(0xFFFEE500),
+                  textColor: Colors.black87,
+                  iconWidget: const Icon(Icons.chat_bubble, color: Colors.black87, size: 24),
+                  onTap: _signInWithKakao,
+                ),
+                const SizedBox(height: 12),
+                _buildLoginButton(
+                  title: "이메일로 계속하기",
+                  color: const Color(0xFF1C1C1E),
+                  textColor: Colors.white,
+                  iconWidget: const Icon(Icons.email_outlined, color: Colors.white, size: 24),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const EmailLoginScene()),
+                    );
+                  },
+                ),
+                const SizedBox(height: 48),
               const SizedBox(height: 32),
               const Text(
                 "계속 진행하면 이용약관 및 개인정보처리방침에 동의하는 것으로 간주됩니다.",
