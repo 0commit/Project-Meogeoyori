@@ -13,7 +13,6 @@ class _ProfileSettingsSceneState extends State<ProfileSettingsScene> {
   bool _isLoading = false;
 
   Future<void> _handleLogout() async {
-    // 확인 다이얼로그 표시
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -49,7 +48,52 @@ class _ProfileSettingsSceneState extends State<ProfileSettingsScene> {
         setState(() {
           _isLoading = false;
         });
-        // 로그아웃 완료 후 메인 화면으로 돌아가며 true 반환 (리프레시용)
+        Navigator.of(context).pop(true);
+      }
+    }
+  }
+
+  Future<void> _handleDeleteAccount() async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2E),
+        title: const Text('회원 탈퇴', style: TextStyle(color: Colors.redAccent)),
+        content: const Text('정말 탈퇴하시겠습니까?\n모든 데이터가 삭제되며 복구할 수 없습니다.', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('탈퇴', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await Supabase.instance.client.rpc('delete_user');
+      await Supabase.instance.client.auth.signOut();
+      await GoogleSignIn.instance.signOut();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('탈퇴 실패: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         Navigator.of(context).pop(true);
       }
     }
@@ -58,7 +102,7 @@ class _ProfileSettingsSceneState extends State<ProfileSettingsScene> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F13), // 앱 기본 배경색 맞춤
+      backgroundColor: const Color(0xFF0F0F13),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F0F13),
         elevation: 0,
@@ -91,12 +135,7 @@ class _ProfileSettingsSceneState extends State<ProfileSettingsScene> {
                 textColor: Colors.white54,
                 icon: Icons.person_remove,
                 iconColor: Colors.white54,
-                onTap: () {
-                  // 추후 구현
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('준비 중인 기능입니다.'), backgroundColor: Colors.orange),
-                  );
-                },
+                onTap: _handleDeleteAccount,
               ),
               const SizedBox(height: 40),
               _buildSectionHeader("앱 정보"),
