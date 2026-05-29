@@ -152,7 +152,20 @@ class _ShortsItemWidgetState extends State<_ShortsItemWidget> {
         SizedBox(
           width: double.infinity,
           height: double.infinity,
-          child: _VideoPlayerWidget(url: widget.data.videoUrl),
+          // child: _VideoPlayerWidget(url: widget.data.videoUrl),
+          child: Container(
+            color: Colors.grey[900],
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.videocam_off, color: Colors.white54, size: 50),
+                  SizedBox(height: 8),
+                  Text("데이터 절약을 위해\n비디오 임시 차단됨", textAlign: TextAlign.center, style: TextStyle(color: Colors.white54)),
+                ],
+              ),
+            ),
+          ),
         ),
         
         Positioned(
