@@ -16,6 +16,10 @@
 		</dict>
 	</array>
 	<!-- End of the Google Sign-in Section -->
+	<key>GIDClientID</key>
+	<string>660036666717-99e715r4prau03cm92na40nu66u65ftp.apps.googleusercontent.com</string>
+	<key>GIDServerClientID</key>
+	<string>660036666717-4b9djjcl1e4snq3uqq0hmbgt1mgb5r7s.apps.googleusercontent.com</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
