@@ -42,7 +42,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int selectedIndex = 0;
-  List<Widget> selectedScene = [
+  List<Widget> get selectedScene => [
     const HomeScene(),
     const SearchScene(),
     const TimerScene(),

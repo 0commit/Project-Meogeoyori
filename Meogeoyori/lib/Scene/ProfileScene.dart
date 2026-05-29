@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileScene extends StatefulWidget {
   const ProfileScene({super.key});
@@ -10,7 +12,59 @@ class ProfileScene extends StatefulWidget {
 
 class _ProfileSceneState extends State<ProfileScene> {
   int _selectedTabIndex = 0;
-  bool _isLoggedIn = false; // 임시 로그인 상태
+  bool _isLoading = false;
+
+  final String _webClientId = '660036666717-4b9djjcl1e4snq3uqq0hmbgt1mgb5r7s.apps.googleusercontent.com';
+  final String _iosClientId = '660036666717-99e715r4prau03cm92na40nu66u65ftp.apps.googleusercontent.com';
+
+  bool get _isLoggedIn => Supabase.instance.client.auth.currentSession != null;
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await GoogleSignIn.instance.initialize(
+        serverClientId: _webClientId,
+        clientId: _iosClientId,
+      );
+
+      final googleUser = await GoogleSignIn.instance.authenticate();
+      if (googleUser == null) {
+        setState(() { _isLoading = false; });
+        return;
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        throw 'ID 토큰을 찾을 수 없습니다.';
+      }
+
+      await Supabase.instance.client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+      );
+
+      if (mounted) {
+        setState(() {}); // UI 갱신하여 프로필 뷰로 전환
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('로그인 실패: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,70 +161,27 @@ class _ProfileSceneState extends State<ProfileScene> {
                 style: TextStyle(color: Colors.orange, fontSize: 14, fontWeight: FontWeight.bold),
               ),
               const Spacer(),
+              if (_isLoading)
+                const Center(child: CircularProgressIndicator(color: Colors.orange))
+              else
+                _buildLoginButton(
+                  title: "Google로 시작하기",
+                  color: Colors.white,
+                  textColor: Colors.black87,
+                  iconWidget: const Icon(Icons.g_mobiledata, color: Colors.black87, size: 32),
+                  onTap: _signInWithGoogle,
+                ),
+              const SizedBox(height: 16),
+              // 다른 소셜 로그인 버튼들은 숨김 처리
+              /*
               _buildLoginButton(
                 title: "카카오로 계속하기",
                 color: const Color(0xFFFEE500),
                 textColor: Colors.black87,
                 iconWidget: const Icon(Icons.chat_bubble, color: Colors.black87, size: 20),
+                onTap: () {},
               ),
-              const SizedBox(height: 12),
-              _buildLoginButton(
-                title: "네이버로 계속하기",
-                color: const Color(0xFF03C75A),
-                textColor: Colors.white,
-                iconWidget: const Text("N", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(height: 12),
-              _buildLoginButton(
-                title: "Google로 계속하기",
-                color: Colors.white,
-                textColor: Colors.black87,
-                iconWidget: const Icon(Icons.g_mobiledata, color: Colors.black87, size: 28),
-              ),
-              if (defaultTargetPlatform == TargetPlatform.iOS) ...[
-                const SizedBox(height: 12),
-                _buildLoginButton(
-                  title: "Apple로 계속하기",
-                  color: const Color(0xFF222224),
-                  textColor: Colors.white,
-                  iconWidget: const Icon(Icons.apple, color: Colors.white, size: 22),
-                ),
-              ],
-              const SizedBox(height: 32),
-              Row(
-                children: [
-                  Expanded(child: Container(height: 1, color: Colors.white12)),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Text("또는", style: TextStyle(color: Colors.white38, fontSize: 12)),
-                  ),
-                  Expanded(child: Container(height: 1, color: Colors.white12)),
-                ],
-              ),
-              const SizedBox(height: 24),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isLoggedIn = true;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.mail_outline, color: Colors.white, size: 20),
-                      SizedBox(width: 8),
-                      Text("이메일로 로그인", style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              ),
+              */
               const SizedBox(height: 32),
               const Text(
                 "계속 진행하면 이용약관 및 개인정보처리방침에 동의하는 것으로 간주됩니다.",
@@ -188,13 +199,10 @@ class _ProfileSceneState extends State<ProfileScene> {
     required Color color,
     required Color textColor,
     required Widget iconWidget,
+    required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isLoggedIn = true;
-        });
-      },
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
@@ -279,11 +287,13 @@ class _ProfileSceneState extends State<ProfileScene> {
                       ),
                       const Spacer(),
                       GestureDetector(
-                        onTap: () {
-                          // 로그아웃 (임시 테스트용)
-                          setState(() {
-                            _isLoggedIn = false;
-                          });
+                        onTap: () async {
+                          // 로그아웃
+                          await Supabase.instance.client.auth.signOut();
+                          await GoogleSignIn.instance.signOut();
+                          if (mounted) {
+                            setState(() {});
+                          }
                         },
                         child: Container(
                           padding: const EdgeInsets.all(10),
