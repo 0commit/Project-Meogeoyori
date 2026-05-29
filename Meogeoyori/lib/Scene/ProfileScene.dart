@@ -19,6 +19,38 @@ class _ProfileSceneState extends State<ProfileScene> {
 
   bool get _isLoggedIn => Supabase.instance.client.auth.currentSession != null;
 
+  Future<void> _signInWithKakao() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Supabase OAuth 딥링크 방식으로 카카오 로그인 수행
+      await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.kakao,
+        redirectTo: 'com.project.meogeoyori://login-callback',
+        authScreenLaunchMode: LaunchMode.externalApplication,
+      );
+      
+      // 참고: signInWithOAuth는 웹뷰를 띄운 후 딥링크를 통해 앱으로 돌아옵니다.
+      // 딥링크 콜백 처리는 Supabase SDK가 내부적으로 알아서 처리하며, 
+      // Session 상태가 변경되면 onAuthStateChange 이벤트에 의해 알 수 있지만
+      // 여기서는 버튼 로딩 상태만 해제합니다. 앱 재진입 시 상태가 갱신됩니다.
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('카카오 로그인 실패: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   Future<void> _signInWithGoogle() async {
     setState(() {
       _isLoading = true;
@@ -172,16 +204,14 @@ class _ProfileSceneState extends State<ProfileScene> {
                   onTap: _signInWithGoogle,
                 ),
               const SizedBox(height: 16),
-              // 다른 소셜 로그인 버튼들은 숨김 처리
-              /*
               _buildLoginButton(
                 title: "카카오로 계속하기",
                 color: const Color(0xFFFEE500),
                 textColor: Colors.black87,
                 iconWidget: const Icon(Icons.chat_bubble, color: Colors.black87, size: 20),
-                onTap: () {},
+                onTap: _signInWithKakao,
               ),
-              */
+              // 다른 소셜 로그인 버튼들은 숨김 처리 (기존에 주석 처리됨)
               const SizedBox(height: 32),
               const Text(
                 "계속 진행하면 이용약관 및 개인정보처리방침에 동의하는 것으로 간주됩니다.",

@@ -14,6 +14,15 @@
 				<string>com.googleusercontent.apps.660036666717-99e715r4prau03cm92na40nu66u65ftp</string>
 			</array>
 		</dict>
+		<!-- Supabase OAuth Deep Link -->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.project.meogeoyori</string>
+			</array>
+		</dict>
 	</array>
 	<!-- End of the Google Sign-in Section -->
 	<key>GIDClientID</key>
