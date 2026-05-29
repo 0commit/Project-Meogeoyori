@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:meogeoyori/Scene/ProfileSettingsScene.dart';
 
 class ProfileScene extends StatefulWidget {
   const ProfileScene({super.key});
@@ -318,10 +319,14 @@ class _ProfileSceneState extends State<ProfileScene> {
                       const Spacer(),
                       GestureDetector(
                         onTap: () async {
-                          // 로그아웃
-                          await Supabase.instance.client.auth.signOut();
-                          await GoogleSignIn.instance.signOut();
-                          if (mounted) {
+                          // 설정 화면으로 이동 후, 로그아웃 등의 상태 변경 시 새로고침
+                          final bool? shouldRefresh = await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const ProfileSettingsScene(),
+                            ),
+                          );
+                          
+                          if (shouldRefresh == true && mounted) {
                             setState(() {});
                           }
                         },
@@ -331,7 +336,7 @@ class _ProfileSceneState extends State<ProfileScene> {
                             color: Color(0xFF1C1C1E),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.logout, color: Colors.white70, size: 20),
+                          child: const Icon(Icons.settings, color: Colors.white70, size: 20),
                         ),
                       ),
                     ],
