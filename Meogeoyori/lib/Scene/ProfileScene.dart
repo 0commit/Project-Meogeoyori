@@ -2,7 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:meogeoyori/Scene/SearchScene.dart';
+import 'package:meogeoyori/Scene/TimerScene.dart';
 import 'package:meogeoyori/Scene/ProfileSettingsScene.dart';
+import 'package:meogeoyori/Scene/SignUpProfileScene.dart';
 
 class ProfileScene extends StatefulWidget {
   const ProfileScene({super.key});
@@ -14,9 +17,65 @@ class ProfileScene extends StatefulWidget {
 class _ProfileSceneState extends State<ProfileScene> {
   int _selectedTabIndex = 0;
   bool _isLoading = false;
+  bool _isLoadingProfile = false;
+  Map<String, dynamic>? _userProfile;
 
   final String _webClientId = '660036666717-4b9djjcl1e4snq3uqq0hmbgt1mgb5r7s.apps.googleusercontent.com';
   final String _iosClientId = '660036666717-99e715r4prau03cm92na40nu66u65ftp.apps.googleusercontent.com';
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isLoggedIn) {
+      _checkProfile();
+    }
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (mounted) {
+        if (data.session != null) {
+          _checkProfile();
+        } else {
+          setState(() {
+            _userProfile = null;
+          });
+        }
+      }
+    });
+  }
+
+  Future<void> _checkProfile() async {
+    if (!_isLoggedIn) return;
+    
+    setState(() { _isLoadingProfile = true; });
+    try {
+      final userId = Supabase.instance.client.auth.currentUser!.id;
+      final data = await Supabase.instance.client
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (data == null) {
+        if (mounted) {
+          await Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const SignUpProfileScene()),
+          );
+          _checkProfile();
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _userProfile = data;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Profile check error: $e');
+    } finally {
+      if (mounted) {
+        setState(() { _isLoadingProfile = false; });
+      }
+    }
+  }
 
   bool get _isLoggedIn => Supabase.instance.client.auth.currentSession != null;
 
@@ -121,7 +180,7 @@ class _ProfileSceneState extends State<ProfileScene> {
             );
           },
           child: _isLoggedIn
-              ? KeyedSubtree(key: const ValueKey('profile'), child: _buildProfileView())
+              ? KeyedSubtree(key: const ValueKey('profile'), child: _isLoadingProfile ? const Center(child: CircularProgressIndicator(color: Colors.orange)) : _buildProfileView())
               : KeyedSubtree(key: const ValueKey('login'), child: _buildLoginView()),
         ),
       ),
@@ -295,23 +354,31 @@ class _ProfileSceneState extends State<ProfileScene> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "요리초보 김자취",
-                            style: TextStyle(
+                            _userProfile?['nickname'] ?? '이름 없음',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 4),
-                          Text(
-                            "@cooking_kim",
-                            style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 14,
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _userProfile?['cooking_level'] ?? '레벨 미상',
+                              style: const TextStyle(
+                                color: Colors.orange,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
