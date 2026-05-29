@@ -444,6 +444,26 @@ class _ProfileSceneState extends State<ProfileScene> {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C1C1E),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  _buildStatItem("0", "나의 레시피"),
+                  Container(height: 40, width: 1, color: Colors.white.withOpacity(0.1)),
+                  _buildStatItem("0", "팔로워"),
+                  Container(height: 40, width: 1, color: Colors.white.withOpacity(0.1)),
+                  _buildStatItem("0", "받은 하트"),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           const TabBar(
             indicatorColor: Colors.orange,
             labelColor: Colors.white,
@@ -506,6 +526,31 @@ class _ProfileSceneState extends State<ProfileScene> {
         ),
         const SizedBox(height: 40),
       ],
+    );
+  }
+
+  Widget _buildStatItem(String count, String label) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            count,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white54,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
