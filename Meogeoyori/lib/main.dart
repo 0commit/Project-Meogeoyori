@@ -4,6 +4,7 @@ import 'package:meogeoyori/Scene/HomeScene.dart';
 import 'package:meogeoyori/Scene/ProfileScene.dart';
 import 'package:meogeoyori/Scene/SearchScene.dart';
 import 'package:meogeoyori/Scene/TimerScene.dart';
+import 'package:meogeoyori/Widget/LoginModal.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,6 +60,13 @@ class _MyHomePageState extends State<MyHomePage> {
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: selectedIndex,
           onTap: (index) {
+            if (index == 3) {
+              final user = Supabase.instance.client.auth.currentUser;
+              if (user == null) {
+                showLoginModal(context);
+                return;
+              }
+            }
             setState(() {
               selectedIndex = index;
             });
