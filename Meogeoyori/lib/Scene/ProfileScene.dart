@@ -17,7 +17,6 @@ class ProfileScene extends StatefulWidget {
 }
 
 class _ProfileSceneState extends State<ProfileScene> {
-  int _selectedTabIndex = 0;
   bool _isLoading = false;
   bool _isLoadingProfile = false;
   Map<String, dynamic>? _userProfile;
@@ -278,7 +277,23 @@ class _ProfileSceneState extends State<ProfileScene> {
                   color: const Color(0xFFFEE500),
                   textColor: Colors.black87,
                   iconWidget: const Icon(Icons.chat_bubble, color: Colors.black87, size: 24),
-                  onTap: _signInWithKakao,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('업데이트 예정입니다.'), backgroundColor: Colors.orange),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildLoginButton(
+                  title: "네이버로 계속하기",
+                  color: const Color(0xFF03C75A),
+                  textColor: Colors.white,
+                  iconWidget: const Text("N", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('업데이트 예정입니다.'), backgroundColor: Colors.orange),
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
                 _buildLoginButton(
@@ -344,249 +359,153 @@ class _ProfileSceneState extends State<ProfileScene> {
   }
 
   Widget _buildProfileView() {
-    return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [Colors.orangeAccent, Colors.deepOrange],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(2.5),
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Color(0xFF2C2C2E),
-                            ),
-                            child: const Icon(Icons.person, color: Colors.white54, size: 36),
-                          ),
-                        ),
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+            child: Row(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [Colors.orangeAccent, Colors.deepOrange],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(2.5),
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFF2C2C2E),
                       ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _userProfile?['nickname'] ?? '이름 없음',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              _userProfile?['cooking_level'] ?? '레벨 미상',
-                              style: const TextStyle(
-                                color: Colors.orange,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () async {
-                          // 설정 화면으로 이동 후, 로그아웃 등의 상태 변경 시 새로고침
-                          final bool? shouldRefresh = await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const ProfileSettingsScene(),
-                            ),
-                          );
-                          
-                          if (shouldRefresh == true && mounted) {
-                            setState(() {});
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF1C1C1E),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.settings, color: Colors.white70, size: 20),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1C1C1E),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            children: [
-                              const Text(
-                                "0",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                "찜한 레시피",
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          height: 40,
-                          width: 1,
-                          color: Colors.white.withOpacity(0.1),
-                        ),
-                        Expanded(
-                          child: Column(
-                            children: [
-                              const Text(
-                                "1",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                "최근 본 레시피",
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                      child: const Icon(Icons.person, color: Colors.white54, size: 36),
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedTabIndex = 0),
-                      child: Column(
-                        children: [
-                          Text(
-                            "찜한 레시피",
-                            style: TextStyle(
-                              color: _selectedTabIndex == 0 ? Colors.white : Colors.white54,
-                              fontSize: 15,
-                              fontWeight: _selectedTabIndex == 0 ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            height: 2,
-                            color: _selectedTabIndex == 0 ? Colors.orange : Colors.white.withOpacity(0.1),
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedTabIndex = 1),
-                      child: Column(
-                        children: [
-                          Text(
-                            "최근 본 레시피",
-                            style: TextStyle(
-                              color: _selectedTabIndex == 1 ? Colors.white : Colors.white54,
-                              fontSize: 15,
-                              fontWeight: _selectedTabIndex == 1 ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            height: 2,
-                            color: _selectedTabIndex == 1 ? Colors.orange : Colors.white.withOpacity(0.1),
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    _selectedTabIndex == 0 ? Icons.favorite_border : Icons.history,
-                    color: Colors.white.withOpacity(0.05),
-                    size: 80,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    _selectedTabIndex == 0 
-                        ? "아직 찜한 레시피가 없어요.\n마음에 드는 레시피에 하트를 눌러보세요!"
-                        : "최근 본 레시피가 없습니다.\n다양한 요리를 탐색해보세요!",
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 14,
-                      height: 1.6,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1C1C1E),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: const Text(
-                      "레시피 보러가기",
-                      style: TextStyle(
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _userProfile?['nickname'] ?? '이름 없음',
+                      style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        _userProfile?['cooking_level'] ?? '레벨 미상',
+                        style: const TextStyle(
+                          color: Colors.orange,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () async {
+                    final bool? shouldRefresh = await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const ProfileSettingsScene(),
+                      ),
+                    );
+                    
+                    if (shouldRefresh == true && mounted) {
+                      setState(() {});
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF1C1C1E),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.settings, color: Colors.white70, size: 20),
                   ),
-                  const SizedBox(height: 40),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
+          const TabBar(
+            indicatorColor: Colors.orange,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white54,
+            dividerColor: Colors.transparent,
+            tabs: [
+              Tab(text: "찜한 레시피"),
+              Tab(text: "최근 본 레시피"),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _buildEmptyState(true),
+                _buildEmptyState(false),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(bool isSaved) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          isSaved ? Icons.favorite_border : Icons.history,
+          color: Colors.white.withOpacity(0.05),
+          size: 80,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          isSaved 
+              ? "아직 찜한 레시피가 없어요.\n마음에 드는 레시피에 하트를 눌러보세요!"
+              : "최근 본 레시피가 없습니다.\n다양한 요리를 탐색해보세요!",
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white54,
+            fontSize: 14,
+            height: 1.6,
+          ),
+        ),
+        const SizedBox(height: 32),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C1E),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: const Text(
+            "레시피 보러가기",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(height: 40),
+      ],
     );
   }
 }
