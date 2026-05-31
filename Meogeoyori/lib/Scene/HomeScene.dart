@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:meogeoyori/Model/ShortsModel.dart';
 import 'package:meogeoyori/Scene/CreatorProfileScene.dart';
 import 'package:meogeoyori/Scene/HashtagResultScene.dart';
+import 'package:meogeoyori/Widget/LoginModal.dart';
+import 'package:meogeoyori/Model/CommentModel.dart';
 
 class HomeScene extends StatefulWidget {
   const HomeScene({super.key});
@@ -96,11 +98,92 @@ class _ShortsItemWidget extends StatefulWidget {
 
 class _ShortsItemWidgetState extends State<_ShortsItemWidget> {
   bool _isLiked = false;
+  int _likeCount = 0;
+  int _commentCount = 0;
 
-  void _toggleLike() {
+  @override
+  void initState() {
+    super.initState();
+    _likeCount = int.tryParse(widget.data.likeCount) ?? 0;
+    _commentCount = int.tryParse(widget.data.commentCount) ?? 0;
+    _fetchVideoStats();
+  }
+
+  Future<void> _fetchVideoStats() async {
+    if (widget.data.id.isEmpty) return;
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      
+      // Fetch comment count
+      final commentRes = await Supabase.instance.client
+          .from('comments')
+          .select('id')
+          .eq('short_id', widget.data.id);
+      
+      // Fetch like count
+      final likeRes = await Supabase.instance.client
+          .from('likes')
+          .select('user_id')
+          .eq('short_id', widget.data.id);
+          
+      bool isLiked = false;
+      if (user != null) {
+        isLiked = (likeRes as List).any((e) => e['user_id'] == user.id);
+      }
+
+      if (mounted) {
+        setState(() { 
+          _commentCount = (commentRes as List).length;
+          _likeCount = (likeRes as List).length;
+          _isLiked = isLiked;
+        });
+      }
+    } catch (e) {
+      print("Stat fetch error: $e");
+    }
+  }
+
+  bool _checkLogin() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      showLoginModal(context);
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _toggleLike() async {
+    if (!_checkLogin()) return;
+    if (widget.data.id.isEmpty) return;
+    
+    final user = Supabase.instance.client.auth.currentUser!;
+    final previousLiked = _isLiked;
+    
     setState(() {
       _isLiked = !_isLiked;
+      _isLiked ? _likeCount++ : _likeCount--;
     });
+    
+    try {
+      if (_isLiked) {
+        await Supabase.instance.client.from('likes').insert({
+          'short_id': widget.data.id,
+          'user_id': user.id,
+        });
+      } else {
+        await Supabase.instance.client.from('likes').delete()
+            .eq('short_id', widget.data.id)
+            .eq('user_id', user.id);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLiked = previousLiked;
+          _isLiked ? _likeCount++ : _likeCount--;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: $e')));
+      }
+    }
   }
 
   void _showCommentBottomSheet() {
@@ -109,7 +192,14 @@ class _ShortsItemWidgetState extends State<_ShortsItemWidget> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
-        return _buildCommentSheet();
+        return _CommentSheetWidget(
+          shortId: widget.data.id,
+          onCommentAdded: () {
+            if (mounted) {
+              setState(() { _commentCount++; });
+            }
+          },
+        );
       },
     );
   }
@@ -178,14 +268,14 @@ class _ShortsItemWidgetState extends State<_ShortsItemWidget> {
                 onTap: _toggleLike,
                 child: _buildActionButton(
                   _isLiked ? Icons.favorite : Icons.favorite_border,
-                  widget.data.likeCount,
+                  _likeCount > 0 ? _likeCount.toString() : "0",
                   iconColor: _isLiked ? Colors.redAccent : Colors.white,
                 ),
               ),
               const SizedBox(height: 24),
               GestureDetector(
                 onTap: _showCommentBottomSheet,
-                child: _buildActionButton(Icons.comment, widget.data.commentCount),
+                child: _buildActionButton(Icons.comment, _commentCount > 0 ? _commentCount.toString() : "0"),
               ),
               const SizedBox(height: 24),
               GestureDetector(
@@ -360,92 +450,6 @@ class _ShortsItemWidgetState extends State<_ShortsItemWidget> {
 
   // --- Bottom Sheets UI ---
 
-  Widget _buildCommentSheet() {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.6,
-      decoration: const BoxDecoration(
-        color: Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: SafeArea(
-        child: Column(
-          children: [
-          const SizedBox(height: 12),
-          Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text("댓글", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-          ),
-          const Divider(color: Colors.white10, height: 1),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildDummyComment("요리초보", "진짜 5분만에 완성되나요? 퇴근하고 해봐야겠어요!"),
-                _buildDummyComment("자취마스터", "계란 대신 두부 넣어도 맛있습니다 강추👍"),
-                _buildDummyComment("다이어터", "소스 비율 조금 줄이면 다이어트 식단으로도 좋겠네요."),
-              ],
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 16, left: 16, right: 16, top: 16),
-            decoration: const BoxDecoration(
-              color: Color(0xFF2C2C2E),
-              border: Border(top: BorderSide(color: Colors.white10)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: "따뜻한 댓글을 남겨주세요...",
-                      hintStyle: const TextStyle(color: Colors.white54, fontSize: 14),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFF1C1C1E),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Icon(Icons.send, color: Colors.orangeAccent),
-              ],
-            ),
-          ),
-        ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDummyComment(String name, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(backgroundColor: Colors.white24, radius: 18, child: const Icon(Icons.person, color: Colors.white, size: 20)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: const TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text(text, style: const TextStyle(color: Colors.white, fontSize: 14)),
-              ],
-            ),
-          ),
-          const Icon(Icons.favorite_border, color: Colors.white54, size: 16),
-        ],
-      ),
-    );
-  }
-
   Widget _buildShareSheet() {
     return Container(
       padding: const EdgeInsets.only(top: 12, bottom: 24),
@@ -532,6 +536,30 @@ class _ShortsItemWidgetState extends State<_ShortsItemWidget> {
   }
 
   Widget _buildRecipeDetailSheet() {
+    List<Widget> ingredientWidgets = [];
+    if (widget.data.ingredients.isNotEmpty) {
+      for (var item in widget.data.ingredients) {
+        if (item is Map) {
+          ingredientWidgets.add(_buildIngredientRow(item['name']?.toString() ?? '', item['amount']?.toString() ?? ''));
+        } else {
+          ingredientWidgets.add(_buildIngredientRow(item.toString(), ""));
+        }
+      }
+    } else {
+      ingredientWidgets.add(const Text("등록된 재료 정보가 없습니다.", style: TextStyle(color: Colors.white70)));
+    }
+
+    List<Widget> stepWidgets = [];
+    if (widget.data.recipeSteps.isNotEmpty) {
+      for (int i = 0; i < widget.data.recipeSteps.length; i++) {
+        var step = widget.data.recipeSteps[i];
+        String desc = step is Map ? (step['desc']?.toString() ?? '') : step.toString();
+        stepWidgets.add(_buildStepRow("${i+1}", desc));
+      }
+    } else {
+      stepWidgets.add(const Text("등록된 레시피 정보가 없습니다.", style: TextStyle(color: Colors.white70)));
+    }
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: const BoxDecoration(
@@ -559,19 +587,12 @@ class _ShortsItemWidgetState extends State<_ShortsItemWidget> {
                   const SizedBox(height: 24),
                   const Text("🛒 준비 재료", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
-                  _buildIngredientRow("계란", "2개"),
-                  _buildIngredientRow("대파", "1/2대"),
-                  _buildIngredientRow("간장", "1 큰술"),
-                  _buildIngredientRow("참기름", "1 큰술"),
-                  _buildIngredientRow("통깨", "약간"),
+                  ...ingredientWidgets,
                   
                   const SizedBox(height: 32),
                   const Text("🍳 조리 순서", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-                  _buildStepRow("1", "대파를 송송 썰어 준비합니다. 너무 두껍지 않게 써는 것이 포인트입니다."),
-                  _buildStepRow("2", "기름을 두른 팬에 대파를 넣고 약불에서 파기름을 냅니다."),
-                  _buildStepRow("3", "파 향이 올라오면 계란을 넣고 빠르게 스크램블 해줍니다."),
-                  _buildStepRow("4", "밥을 넣고 간장, 참기름으로 간을 한 뒤 통깨를 뿌려 마무리합니다."),
+                  ...stepWidgets,
                 ],
               ),
             ),
@@ -618,6 +639,208 @@ class _ShortsItemWidgetState extends State<_ShortsItemWidget> {
               style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.4),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommentSheetWidget extends StatefulWidget {
+  final String shortId;
+  final VoidCallback onCommentAdded;
+  const _CommentSheetWidget({required this.shortId, required this.onCommentAdded});
+  @override
+  State<_CommentSheetWidget> createState() => _CommentSheetWidgetState();
+}
+
+class _CommentSheetWidgetState extends State<_CommentSheetWidget> {
+  List<CommentModel> _comments = [];
+  bool _isLoading = true;
+  final TextEditingController _commentController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchComments();
+  }
+
+  Future<void> _fetchComments() async {
+    if (widget.shortId.isEmpty) {
+      print("Error: shortId is empty");
+      if (mounted) {
+        setState(() { _isLoading = false; });
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('영상 ID가 없어 댓글을 불러올 수 없습니다.')));
+      }
+      return;
+    }
+    try {
+      // profiles 테이블의 컬럼이 name이 아니라 nickname 입니다. avatar_url은 없을 수도 있지만 일단 남겨둡니다.
+      final data = await Supabase.instance.client
+          .from('comments')
+          .select('*, profiles(nickname)')
+          .eq('short_id', widget.shortId)
+          .order('created_at', ascending: false);
+      final fetched = (data as List).map((e) => CommentModel.fromJson(e as Map<String, dynamic>)).toList();
+      if (mounted) {
+        setState(() {
+          _comments = fetched;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("Comment fetch error: $e");
+      if (mounted) {
+        setState(() { _isLoading = false; });
+        // 에러 원인을 파악하기 위해 화면에 띄움
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('불러오기 에러: $e')));
+      }
+    }
+  }
+
+  Future<void> _postComment() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      Navigator.pop(context);
+      showLoginModal(context);
+      return;
+    }
+    final text = _commentController.text.trim();
+    if (widget.shortId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('영상 ID가 누락되었습니다. DB에 id 컬럼이 있는지 확인하세요.')));
+      return;
+    }
+    if (text.isEmpty) return;
+    
+    _commentController.clear();
+    FocusScope.of(context).unfocus();
+    
+    try {
+      // insert와 동시에 생성된 데이터(프로필 포함)를 반환받아 화면에 즉각 추가합니다.
+      final insertedData = await Supabase.instance.client.from('comments').insert({
+        'short_id': widget.shortId,
+        'user_id': user.id,
+        'content': text,
+      }).select('*, profiles(nickname)').single();
+      
+      final newComment = CommentModel.fromJson(insertedData as Map<String, dynamic>);
+      
+      if (mounted) {
+        setState(() {
+          _comments.insert(0, newComment); // 리스트 맨 앞에 새 댓글 즉시 추가
+        });
+      }
+      
+      widget.onCommentAdded();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('등록 에러: $e')));
+        // 실패 시 다시 전체 목록을 불러와 동기화
+        _fetchComments();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.6,
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1C1E),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text("댓글", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+            const Divider(color: Colors.white10, height: 1),
+            Expanded(
+              child: _isLoading 
+                  ? const Center(child: CircularProgressIndicator())
+                  : _comments.isEmpty 
+                      ? const Center(child: Text("가장 먼저 댓글을 남겨보세요!", style: TextStyle(color: Colors.white54)))
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _comments.length,
+                          itemBuilder: (context, index) {
+                            final c = _comments[index];
+                            return _buildCommentRow(c.userName, c.content, c.profileImageUrl);
+                          },
+                        ),
+            ),
+            Container(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 16, left: 16, right: 16, top: 16),
+              decoration: const BoxDecoration(
+                color: Color(0xFF2C2C2E),
+                border: Border(top: BorderSide(color: Colors.white10)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _commentController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: "따뜻한 댓글을 남겨주세요...",
+                        hintStyle: const TextStyle(color: Colors.white54, fontSize: 14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFF1C1C1E),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: _postComment,
+                    child: const Icon(Icons.send, color: Colors.orangeAccent),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCommentRow(String name, String text, String avatarUrl) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            backgroundColor: Colors.white24, 
+            radius: 18, 
+            backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+            child: avatarUrl.isEmpty ? const Icon(Icons.person, color: Colors.white, size: 20) : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: const TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(text, style: const TextStyle(color: Colors.white, fontSize: 14)),
+              ],
+            ),
+          ),
+          const Icon(Icons.favorite_border, color: Colors.white54, size: 16),
         ],
       ),
     );
